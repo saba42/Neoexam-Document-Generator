@@ -264,7 +264,9 @@ async def download_pdf(job_id: str, filename: str):
 
 # Serve React frontend LAST
 # so API routes take priority
-frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+# Absolute path resolution guarantees it works locally and on Render regardless of __main__ execution directory
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+frontend_dist = os.path.join(PROJECT_ROOT, "frontend", "dist")
 
 if os.path.exists(frontend_dist):
     # Mount static assets (js, css, images)
