@@ -3,8 +3,8 @@ import tempfile
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-from backend.utils.paths import get_base_dir
-load_dotenv(os.path.join(get_base_dir(), ".env"))
+from backend.utils.paths import get_base_dir, get_env_path
+load_dotenv(get_env_path())
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
