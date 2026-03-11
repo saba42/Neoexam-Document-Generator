@@ -51,7 +51,11 @@ export default function App() {
         }
 
         if (data.status === 'error' || data.error) {
-          setError(data.message || data.error || 'An unknown error occurred');
+          let errVal = data.message || data.error || 'An unknown error occurred';
+          if (typeof errVal === 'object') {
+            errVal = errVal.message || JSON.stringify(errVal);
+          }
+          setError(errVal);
           setIsGenerating(false);
           eventSourceRef.current?.close();
         }
