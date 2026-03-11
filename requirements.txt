@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+playwright
+python-docx
+supabase
+python-dotenv
+pandas
+openpyxl
+lxml
+python-multipart

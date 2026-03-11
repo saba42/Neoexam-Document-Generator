@@ -1,0 +1,23 @@
+INFO:     Will watch for changes in these directories: ['/Users/sabapathi/Desktop/NeoExam/backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [82323] using StatReload
+INFO:     Started server process [82370]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:58374 - "GET /status HTTP/1.1" 200 OK
+Bypassing DNS blockage... fetching https://kdxtytslsxchjjcckgco.supabase.co/storage/v1/object/public/parameter-docs/Course_Parameters.docx
+INFO:     127.0.0.1:58372 - "POST /generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65315 - "GET /status HTTP/1.1" 200 OK
+Bypassing DNS blockage... fetching https://kdxtytslsxchjjcckgco.supabase.co/storage/v1/object/public/parameter-docs/Course_Parameters.docx
+INFO:     127.0.0.1:65313 - "POST /generate HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'document/doc_generator.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [82370]
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f3ca8f40 (most recent call first):
+  <no Python frame>

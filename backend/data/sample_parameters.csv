@@ -1,0 +1,12 @@
+parameter_key,display_name,definition,how_it_works,faq
+param_1,Frequent Screenshot,"Takes random screenshots of the candidate's screen during the test.
+- Interval is typically {interval}.
+- Captured images are saved to the remote server.","The browser automation uses WebRTC or canvas snapshotting to record the viewport.
+- Bypasses traditional print screen restrictions.","Q1: How often are screenshots taken?
+It happens randomly but averages the interval you set.
+Q2: Does it capture external monitors?
+It captures the entire visible extended desktop area."
+param_2,Hide Score,"Prevents the candidate from seeing their final score immediately after submission.",The portal suppresses the results page redirect and instead shows a 'Thank You' message. It requires manual admin release later.,"Q1: Can candidates see subsection scores?
+No, all scoring is completely hidden."
+param_3,Ignore Leading Whitespaces,"Automatically trims any spaces at the beginning or end of a candidate's text answer.
+- Helps prevent false negative grading on short-answer questions.",The grading script applies a string `.trim()` function before running regex or exact-match comparisons.,

@@ -1,0 +1,33 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Cache and outputs
+.cache/
+outputs/
+/tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.next/
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PyInstaller
+*.exe
+*.app

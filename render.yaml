@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: exam-params-app
+    runtime: python
+    buildCommand: >-
+      pip install -r requirements.txt &&
+      playwright install chromium &&
+      playwright install-deps chromium &&
+      cd frontend && npm install &&
+      npm run build
+    startCommand: >-
+      uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: DOCS_BUCKET
+        value: parameter-docs
+      - key: DOCS_FILENAME
+        value: Paramter Document.docx
+      - key: PYTHON_VERSION
+        value: "3.11.0"
