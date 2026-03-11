@@ -10,6 +10,7 @@ echo "1. Installing Python Requirements..."
 pip install -r requirements.txt
 
 echo "2. Installing Playwright Chromium..."
+export PLAYWRIGHT_BROWSERS_PATH=0
 python -m playwright install chromium
 
 echo "3. Resolving Node version for React Build..."
