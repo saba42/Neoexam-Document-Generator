@@ -10,7 +10,7 @@ echo "1. Installing Python Requirements..."
 pip install -r requirements.txt
 
 echo "2. Installing Playwright Chromium..."
-playwright install chromium
+python -m playwright install chromium
 
 echo "3. Resolving Node version for React Build..."
 # Render's Python environments often break `npm` paths.
