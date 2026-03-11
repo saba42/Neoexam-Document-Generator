@@ -90,6 +90,9 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                 # On SPAs, this causes 30s timeouts if background trackers load slowly.
                 await courses_locator.click(force=True, no_wait_after=True)
                 
+                # IMPORTANT: Hardcode a 3-second yield on Render to allow the React SPA to physically render the new DOM tree
+                await asyncio.sleep(3)
+                
                 # Wait for the courses page to physically render rather than networkidle
                 await page.wait_for_selector("input[placeholder='Enter course name to search']", state="visible", timeout=60000)
             except Exception as e:
