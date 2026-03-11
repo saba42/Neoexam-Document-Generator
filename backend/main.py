@@ -264,16 +264,25 @@ async def download_pdf(job_id: str, filename: str):
 
 # Serve React frontend LAST
 # so API routes take priority
-frontend_dist = os.path.join(
-    os.path.dirname(__file__),
-    "..", "frontend", "dist"
-)
+frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+
 if os.path.exists(frontend_dist):
-    app.mount(
-        "/",
-        StaticFiles(
-            directory=frontend_dist,
-            html=True
-        ),
-        name="static"
-    )
+    # Mount static assets (js, css, images)
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    # Catch-all route to serve the React index.html for SPA routing
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        # Prevent API routes from being swallowed if they somehow missed above handlers
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+            
+        index_path = os.path.join(frontend_dist, "index.html")
+        requested_file = os.path.join(frontend_dist, full_path)
+        
+        # If the specific requested file exists (like vite.svg), serve it directly
+        if os.path.exists(requested_file) and os.path.isfile(requested_file):
+            return FileResponse(requested_file)
+            
+        # Otherwise, return the React SPA index.html
+        return FileResponse(index_path)
