@@ -13,8 +13,16 @@ echo "2. Installing Playwright Chromium..."
 python -m playwright install chromium
 
 echo "3. Resolving Node version for React Build..."
-# Render's Python environments often break `npm` paths.
+# Render's Python environments often lack `nvm` entirely.
 export NVM_DIR="$HOME/.nvm"
+
+# Download nvm if it doesn't exist
+if [ ! -d "$NVM_DIR" ]; then
+    echo "NVM not found, installing..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+fi
+
+# Source nvm so the commands exist in the current bash session
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
 nvm install 22
