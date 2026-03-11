@@ -14,6 +14,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 
 import os
+import sys
+
+# ALWAYS Add the 'backend' directory to sys.path first 
+# to fix Render root execution ModuleNotFoundErrors.
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from automation.portal_scraper import scrape_parameters
 from document.doc_generator import generate_document as generate_document_docx
 from storage.supabase_loader import get_source_document_path
