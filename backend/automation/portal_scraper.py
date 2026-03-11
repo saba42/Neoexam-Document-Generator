@@ -57,7 +57,7 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                 # Try clicking the login button directly using Playwright locator
                 login_btn = page.locator('button.form__button[label="Login"]')
                 if await login_btn.count() > 0:
-                    await login_btn.click(force=True)
+                    await login_btn.click(force=True, no_wait_after=True)
                 else:
                     # Fallback to Enter key
                     await page.press("#password", "Enter")
@@ -86,7 +86,9 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                 # Use the exact locator from the user's HTML snippet
                 courses_locator = page.locator("li[ptooltip='Courses']").first
                 await courses_locator.wait_for(state="visible", timeout=60000)
-                await courses_locator.click()
+                # By default, Playwright waits for network idle after a click. 
+                # On SPAs, this causes 30s timeouts if background trackers load slowly.
+                await courses_locator.click(force=True, no_wait_after=True)
                 
                 # Wait for the courses page to physically render rather than networkidle
                 await page.wait_for_selector("input[placeholder='Enter course name to search']", state="visible", timeout=60000)
@@ -152,7 +154,7 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                 # Click the search button provided by the user
                 search_btn = page.locator("button:has(.icon-search)").first
                 await search_btn.wait_for(state="visible", timeout=30000)
-                await search_btn.click()
+                await search_btn.click(no_wait_after=True)
                 
                 # Wait for search results by making sure the course name appears in the grid anywhere
                 # We use a highly forgiving locator that just looks for the text inside any table cell or grid cell
@@ -171,7 +173,7 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                 # Click the option inside dropdown: <li role="option" ... aria-label="Edit">
                 edit_option = page.locator("li[aria-label='Edit'], li:has-text('Edit')").first
                 await edit_option.wait_for(state="visible", timeout=30000)
-                await edit_option.click()
+                await edit_option.click(no_wait_after=True)
                 
                 # We do NOT use networkidle here because the page might naturally background-poll
             except Exception as e:
@@ -212,7 +214,7 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                 toggler = test_row.locator("span.ui-row-toggler, span.fa-chevron-circle-right").first
                 
                 await toggler.wait_for(state="visible", timeout=30000)
-                await toggler.click()
+                await toggler.click(no_wait_after=True)
                 
                 # Slight wait for expansion content
                 await asyncio.sleep(2)
@@ -240,7 +242,7 @@ async def scrape_parameters(portal_url: str, email: str, password: str, course_n
                     
                     expanded = await target.get_attribute("aria-expanded")
                     if expanded != "true":
-                        await target.click()
+                        await target.click(no_wait_after=True)
                         await asyncio.sleep(1) # Wait 1s for content to expand
                 except Exception as e:
                     print(f"Warning: Could not expand section {section_name}: {e}")
