@@ -286,3 +286,16 @@ if os.path.exists(frontend_dist):
             
         # Otherwise, return the React SPA index.html
         return FileResponse(index_path)
+else:
+    @app.get("/{full_path:path}")
+    async def debug_missing_frontend(full_path: str):
+        import traceback
+        return {
+            "error": "Frontend build not found!",
+            "expected_path": frontend_dist,
+            "exists": os.path.exists(frontend_dist),
+            "cwd": os.getcwd(),
+            "root_contents": os.listdir(os.path.join(os.path.dirname(__file__), "..")),
+            "frontend_contents": os.listdir(os.path.join(os.path.dirname(__file__), "..", "frontend")) if os.path.exists(os.path.join(os.path.dirname(__file__), "..", "frontend")) else "Missing frontend directory",
+            "message": "The React app was not built or was not placed in the expected 'frontend/dist' folder during the Render Build Command."
+        }
