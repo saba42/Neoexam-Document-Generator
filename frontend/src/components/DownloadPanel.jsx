@@ -18,7 +18,9 @@ export default function DownloadPanel({ jobId, filename, isZip, error, reset }) 
                             <FaExclamationTriangle size={32} />
                         </div>
                         <h2 className="text-2xl font-bold text-red-700">Generation Failed</h2>
-                        <p className="text-red-600 max-w-md">{error}</p>
+                        <p className="text-red-600 max-w-md whitespace-pre-wrap text-left text-sm bg-red-50 p-4 rounded-lg border border-red-100 mt-2">
+                            {typeof error === 'object' ? (error.message || JSON.stringify(error)) : String(error)}
+                        </p>
                         <button onClick={reset} className="mt-4 px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg hover:shadow-red-600/25 transform hover:-translate-y-0.5 transition-all duration-200">
                             Try Again
                         </button>
