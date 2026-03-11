@@ -40,6 +40,16 @@ export default function App() {
       try {
         const data = JSON.parse(event.data);
         if (data.step) setCurrentStep(data.step);
+
+        if (data.download_ready) {
+          setJobId(data.job_id);
+          setFilename(data.filename);
+          setIsZip(data.is_zip);
+          setCurrentStep(6);
+          setIsGenerating(false);
+          eventSourceRef.current?.close();
+        }
+
         if (data.status === 'error' || data.error) {
           setError(data.message || data.error || 'An unknown error occurred');
           setIsGenerating(false);
@@ -51,7 +61,6 @@ export default function App() {
     };
 
     eventSourceRef.current.onerror = () => {
-      // Typically EventSource retries automatically, but we can log it.
       console.warn('SSE Connection Error or Closed');
     };
 
@@ -72,7 +81,6 @@ export default function App() {
       try {
         json = JSON.parse(rawText);
       } catch (e) {
-        // If the response is not valid JSON (e.g., Render 502/504 HTML error page)
         throw new Error(`Server returned ${response.status}: ${rawText.substring(0, 100)}...`);
       }
 
@@ -80,16 +88,12 @@ export default function App() {
         throw new Error(json.message || json.detail || `Server returned ${response.status}`);
       }
 
+      // We only store the job_id early. The filename arrives later via SSE.
       setJobId(json.job_id);
-      setFilename(json.filename);
-      setIsZip(json.is_zip);
 
-      setCurrentStep(6);
-      setIsGenerating(false);
     } catch (err) {
       setError(err.message || 'Failed to connect to server');
       setIsGenerating(false);
-    } finally {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
       }

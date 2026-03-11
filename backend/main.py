@@ -68,10 +68,105 @@ async def status_stream():
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
+async def process_generation(job_id: str, df: pd.DataFrame, portal_url: str, email: str, password: str):
+    try:
+        await status_manager.broadcast({"step": 1, "message": "Connecting to portal..."})
+        await asyncio.sleep(0.5)
+
+        await status_manager.broadcast({"step": 2, "message": "Verifying documentation cache..."})
+        try:
+            # We don't need to store the path since doc_generator calls it internally
+            # We just call it here to trigger the cache so the user gets an early error if it fails
+            await asyncio.to_thread(get_source_document_path)
+        except FileNotFoundError as e:
+            error_msg = {"status": "error", "message": str(e)}
+            await status_manager.broadcast(error_msg)
+            # We DONT return an error, we let it proceed so parameters are marked "coming soon"
+            pass
+            
+        await asyncio.sleep(0.5)
+
+        generated_files = []
+
+        for index, row in df.iterrows():
+            course_name = row["course_name"]
+            module_name = row["module_name"]
+            test_name = row["test_name"]
+            output_filename = row.get("output_filename", f"{module_name}_{test_name}_Params.docx")
+            if pd.isna(output_filename) or not str(output_filename).strip():
+                output_filename = f"{module_name}_{test_name}_Params.docx"
+            output_filename = str(output_filename).strip()
+            
+            # Sanitize filename to prevent directory traversal crashes
+            output_filename = re.sub(r'[\\/*?:"<>|]', '_', output_filename)
+                
+            if not output_filename.endswith(".docx"):
+                output_filename += ".docx"
+
+            await status_manager.broadcast({"step": 3, "message": f"Navigating to course {course_name}..."})
+            await asyncio.sleep(0.5)
+            
+            await status_manager.broadcast({"step": 4, "message": f"Finding test {test_name}..."})
+            await asyncio.sleep(0.5)
+            
+            await status_manager.broadcast({"step": 5, "message": "Reading parameters..."})
+            
+            scraped_data = await scrape_parameters(portal_url, email, password, course_name, module_name, test_name)
+
+            # Purge Chromium from RAM to prevent Render 512MB OOM crashes
+            import gc
+            gc.collect()
+
+            await status_manager.broadcast({"step": 6, "message": "Building document..."})
+            # Run the heavy XML python-docx operation in a background thread so the SSE EventLoop doesn't freeze
+            doc_filepath = await asyncio.to_thread(generate_document_docx, scraped_data, course_name, test_name, output_filename)
+            
+            with open(doc_filepath, "rb") as f:
+                doc_stream = io.BytesIO(f.read())
+                
+            try:
+                os.remove(doc_filepath)
+            except Exception:
+                pass
+            
+            generated_files.append((output_filename, doc_stream))
+
+        # Save to a temporary job directory
+        job_dir = Path("/tmp/neoexam") / job_id
+        job_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save the master docx / zip so the user can download it repeatedly or convert it
+        export_filename = "Generated_Documents.zip" if len(generated_files) > 1 else generated_files[0][0]
+        export_path = job_dir / export_filename
+        
+        if len(generated_files) == 1:
+            with open(export_path, "wb") as f:
+                f.write(generated_files[0][1].getvalue())
+        else:
+            with zipfile.ZipFile(export_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for out_filename, doc_stream in generated_files:
+                    zf.writestr(out_filename, doc_stream.getvalue())
+
+        await status_manager.broadcast({
+            "step": 7, 
+            "message": "Done!", 
+            "download_ready": True,
+            "job_id": job_id,
+            "filename": export_filename,
+            "is_zip": len(generated_files) > 1
+        })
+        await asyncio.sleep(0.5)
+        
+    except Exception as e:
+        error_msg = {"status": "error", "message": f"Server Error: {str(e)}"}
+        await status_manager.broadcast(error_msg)
+
+
 @app.post("/generate")
 async def generate_document(
+    background_tasks: BackgroundTasks,
     portal_url: str = Form(...),
-    email: str = Form(...),
+    email: str = Form(...) ,
     password: str = Form(...),
     file: UploadFile = File(...)
 ):
@@ -93,87 +188,15 @@ async def generate_document(
         if df.empty:
             return JSONResponse(status_code=400, content={"status": "error", "message": "The uploaded file is empty."})
 
-        await status_manager.broadcast({"step": 1, "message": "Connecting to portal..."})
-        await asyncio.sleep(0.5)
-
-        await status_manager.broadcast({"step": 2, "message": "Verifying documentation cache..."})
-        try:
-            # We don't need to store the path since doc_generator calls it internally
-            # We just call it here to trigger the cache so the user gets an early error if it fails
-            get_source_document_path()
-        except FileNotFoundError as e:
-            error_msg = {"status": "error", "message": str(e)}
-            await status_manager.broadcast(error_msg)
-            # We DONT return an error, we let it proceed so parameters are marked "coming soon"
-            pass
-            
-        await asyncio.sleep(0.5)
-
-        generated_files = []
-
-        for index, row in df.iterrows():
-            course_name = row["course_name"]
-            module_name = row["module_name"]
-            test_name = row["test_name"]
-            output_filename = row.get("output_filename", f"{module_name}_{test_name}_Params.docx")
-            if pd.isna(output_filename) or not str(output_filename).strip():
-                output_filename = f"{module_name}_{test_name}_Params.docx"
-            output_filename = str(output_filename).strip()
-            
-            # Sanitize filename to prevent directory traversal crashes (e.g. "React/Redux")
-            output_filename = re.sub(r'[\\/*?:"<>|]', '_', output_filename)
-                
-            if not output_filename.endswith(".docx"):
-                output_filename += ".docx"
-
-            await status_manager.broadcast({"step": 3, "message": "Navigating to course..."})
-            await asyncio.sleep(0.5)
-            
-            await status_manager.broadcast({"step": 4, "message": "Finding test..."})
-            await asyncio.sleep(0.5)
-            
-            await status_manager.broadcast({"step": 5, "message": "Reading parameters..."})
-            
-            scraped_data = await scrape_parameters(portal_url, email, password, course_name, module_name, test_name)
-
-            await status_manager.broadcast({"step": 6, "message": "Building document..."})
-            doc_filepath = generate_document_docx(scraped_data, course_name, test_name, output_filename)
-            
-            with open(doc_filepath, "rb") as f:
-                doc_stream = io.BytesIO(f.read())
-                
-            try:
-                os.remove(doc_filepath)
-            except Exception:
-                pass
-            
-            generated_files.append((output_filename, doc_stream))
-
-        await status_manager.broadcast({"step": 7, "message": "Done!", "download_ready": True})
-        await asyncio.sleep(0.5)
-
-        # Save to a temporary job directory
         job_id = str(uuid.uuid4())
-        job_dir = Path("/tmp/neoexam") / job_id
-        job_dir.mkdir(parents=True, exist_ok=True)
         
-        # Save the master docx / zip so the user can download it repeatedly or convert it
-        export_filename = "Generated_Documents.zip" if len(generated_files) > 1 else generated_files[0][0]
-        export_path = job_dir / export_filename
-        
-        if len(generated_files) == 1:
-            with open(export_path, "wb") as f:
-                f.write(generated_files[0][1].getvalue())
-        else:
-            with zipfile.ZipFile(export_path, "w", zipfile.ZIP_DEFLATED) as zf:
-                for out_filename, doc_stream in generated_files:
-                    zf.writestr(out_filename, doc_stream.getvalue())
-                    
-        return JSONResponse(status_code=200, content={
-            "status": "success",
+        # Dispatch the generation process to the background so the endpoint can return instantly
+        background_tasks.add_task(process_generation, job_id, df, portal_url, email, password)
+
+        return JSONResponse(status_code=202, content={
+            "status": "processing",
             "job_id": job_id,
-            "filename": export_filename,
-            "is_zip": len(generated_files) > 1
+            "message": "Generation started in background"
         })
         
     except Exception as e:
