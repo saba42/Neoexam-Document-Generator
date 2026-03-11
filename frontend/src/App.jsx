@@ -67,10 +67,17 @@ export default function App() {
         body: formData,
       });
 
-      const json = await response.json();
+      const rawText = await response.text();
+      let json;
+      try {
+        json = JSON.parse(rawText);
+      } catch (e) {
+        // If the response is not valid JSON (e.g., Render 502/504 HTML error page)
+        throw new Error(`Server returned ${response.status}: ${rawText.substring(0, 100)}...`);
+      }
 
       if (!response.ok || json.status === 'error') {
-        throw new Error(json.message || `Server returned ${response.status}`);
+        throw new Error(json.message || json.detail || `Server returned ${response.status}`);
       }
 
       setJobId(json.job_id);
