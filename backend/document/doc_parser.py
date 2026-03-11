@@ -225,6 +225,7 @@ def parse_source_document(filepath):
                     current_q = None
                     current_a_lines = []
                     current_a_blocks = []
+                    
                     current_param = text
 
                     # Sanitize parameter name
